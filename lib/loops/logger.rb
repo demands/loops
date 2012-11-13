@@ -3,6 +3,14 @@ require 'delegate'
 require 'fileutils'
 
 class Loops::Logger < ::Delegator
+  LOG_SEVERITIES = {
+    :debug => 0,
+    :info =>  1,
+    :warn =>  2,
+    :error => 3,
+    :fatal => 4
+  }
+
   # @return [Boolean]
   #   A value indicating whether all logging output should be
   #   also duplicated to the console.
@@ -160,19 +168,19 @@ class Loops::Logger < ::Delegator
     end
 
     def initialize(log_device, write_to_console = true, colorful_logs = false)
-      super(log_device, number_of_files, max_file_size)
       @log_device_descriptor = log_device
-      @log_device            = IO.new(log_device)
+      @log_device            = String === log_device ? File.new(log_device) : log_device
       @formatter             = Formatter.new(self)
       @write_to_console      = write_to_console
       @colorful_logs         = colorful_logs
       @prefix                = nil
+      @level                 = :info
     end
 
-    [ :debug, :error, :fatal, :info, :warn ].each do |severity|
+    LOG_SEVERITIES.keys.each do |severity|
       class_eval <<-EVAL, __FILE__, __LINE__
         def #{severity}(message)
-          add(severity, message)
+          add(severity, message) unless(LOG_SEVERITIES[@level] > LOG_SEVERITIES[severity])
         end
       EVAL
     end
@@ -190,7 +198,15 @@ class Loops::Logger < ::Delegator
     end
 
     def reopen_logs!
-      @log_device.reopen(@log_device_descriptor)
+      if String === @log_device_descriptor
+        @log_device.reopen(File.new(@log_device_descriptor))
+      else
+        @log_device.reopen(@log_device_descriptor)
+      end
+    end
+
+    def level=(level)
+      @level = level
     end
 
     def color_errors(severity, line)
