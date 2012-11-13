@@ -3,12 +3,22 @@ require 'delegate'
 require 'fileutils'
 
 class Loops::Logger < ::Delegator
+  DEBUG = 0
+  INFO = 1
+  WARN = 2
+  ERROR = 3
+  FATAL = 4
   LOG_SEVERITIES = {
-    :debug => 0,
-    :info =>  1,
-    :warn =>  2,
-    :error => 3,
-    :fatal => 4
+    :debug => DEBUG,
+    :info =>  INFO,
+    :warn =>  WARN,
+    :error => ERROR,
+    :fatal => FATAL,
+    DEBUG => DEBUG,
+    INFO => INFO,
+    WARN => WARN,
+    ERROR => ERROR,
+    FATAL => FATAL
   }
 
   # @return [Boolean]
@@ -36,6 +46,7 @@ class Loops::Logger < ::Delegator
   #
   def initialize(logfile = $stdout, level = :info, write_to_console = false)
     @write_to_console = write_to_console
+    @level = level
     self.logfile = logfile
     super(@implementation)
   end
@@ -169,18 +180,20 @@ class Loops::Logger < ::Delegator
 
     def initialize(log_device, write_to_console = true, colorful_logs = false)
       @log_device_descriptor = log_device
-      @log_device            = String === log_device ? File.new(log_device) : log_device
       @formatter             = Formatter.new(self)
       @write_to_console      = write_to_console
       @colorful_logs         = colorful_logs
       @prefix                = nil
-      @level                 = :info
+      @level                 = INFO
+
+      @log_device            = log_device_resource
     end
 
     LOG_SEVERITIES.keys.each do |severity|
+      break unless Symbol === severity
       class_eval <<-EVAL, __FILE__, __LINE__
         def #{severity}(message)
-          add(severity, message) unless(LOG_SEVERITIES[@level] > LOG_SEVERITIES[severity])
+          add(#{LOG_SEVERITIES[severity]}, message) unless(LOG_SEVERITIES[@level] > #{LOG_SEVERITIES[severity]})
         end
       EVAL
     end
@@ -189,6 +202,7 @@ class Loops::Logger < ::Delegator
       begin
         message = color_errors(severity, message) if @colorful_logs
         @log_device.puts(message)
+        @log_device.flush
         if @write_to_console && message
           puts @formatter.call(%w(D I W E F A)[severity] || 'A', Time.now, progname, message)
         end
@@ -197,20 +211,24 @@ class Loops::Logger < ::Delegator
       end
     end
 
-    def reopen_logs!
+    def log_device_resource
       if String === @log_device_descriptor
-        @log_device.reopen(File.new(@log_device_descriptor))
-      else
-        @log_device.reopen(@log_device_descriptor)
+        File.new(@log_device_descriptor, 'w')
+      elsif IO === @log_device_descriptor
+        @log_device_descriptor
       end
     end
 
+    def reopen_logs!
+      @log_device.reopen(log_device_resource)
+    end
+
     def level=(level)
-      @level = level
+      @level = LOG_SEVERITIES[level] if LOG_SEVERITIES[level]
     end
 
     def color_errors(severity, line)
-      if severity < ::Logger::ERROR
+      if severity < ERROR
         line
       else
         if line && line !~ /\e/
