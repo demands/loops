@@ -189,6 +189,10 @@ class Loops::Logger < ::Delegator
       end
     end
 
+    def reopen_logs!
+      @log_device.reopen(@log_device_descriptor)
+    end
+
     def color_errors(severity, line)
       if severity < ::Logger::ERROR
         line

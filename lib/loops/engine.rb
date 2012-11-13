@@ -201,9 +201,14 @@ class Loops::Engine
         @pm.start_shutdown!
       }
 
+      reopen_logs = proc {
+        @pm.reopen_logs!
+      }
+
       trap('TERM', stop)
       trap('INT', stop)
       trap('EXIT', stop)
+      trap('USR1', reopen_logs)
     end
 
     def fix_ar_after_fork

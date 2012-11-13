@@ -100,5 +100,9 @@ module Loops
       logger.info("Starting shutdown (shutdown flag set)...")
       @shutdown = true
     end
+
+    def reopen_logs!
+      logger.reopen_logs!
+    end
   end
 end
