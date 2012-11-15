@@ -169,11 +169,11 @@ class Loops::Logger < ::Delegator
         @logger = logger
       end
 
-      def call(severity, time, progname, message)
+      def call(severity, time, message)
         if (@logger.prefix || '').empty?
-          "#{severity[0..0]} : #{time.strftime('%Y-%m-%d %H:%M:%S')} : #{message || progname}\n"
+          "#{severity[0..0]} : #{time.strftime('%Y-%m-%d %H:%M:%S')} : #{message}\n"
         else
-          "#{severity[0..0]} : #{time.strftime('%Y-%m-%d %H:%M:%S')} : #{@logger.prefix} : #{message || progname}\n"
+          "#{severity[0..0]} : #{time.strftime('%Y-%m-%d %H:%M:%S')} : #{@logger.prefix} : #{message}\n"
         end
       end
     end
@@ -201,12 +201,10 @@ class Loops::Logger < ::Delegator
     def add(severity, message = nil)
       begin
         message = color_errors(severity, message) if @colorful_logs
+        message = @formatter.call(%w(D I W E F A)[severity] || 'A', Time.now, message)
         @log_device.puts(message)
         @log_device.flush
-        if @write_to_console && message
-          puts @formatter.call(%w(D I W E F A)[severity] || 'A', Time.now, progname, message)
-        end
-      rescue
+        puts message if @write_to_console && message
         # ignore errors in logging
       end
     end
