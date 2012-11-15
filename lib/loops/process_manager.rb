@@ -117,7 +117,6 @@ module Loops
     end
 
     def start_reopen_logs!
-      # logger.reopen_logs!
       @reopen_logs = true
     end
   end
