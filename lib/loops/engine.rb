@@ -202,6 +202,7 @@ class Loops::Engine
       }
 
       reopen_logs = proc {
+        warn "Reopening logs..."
         @pm.reopen_logs!
       }
 
