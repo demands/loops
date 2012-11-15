@@ -51,5 +51,13 @@ module Loops
         worker.stop(force)
       end
     end
+
+    def reopen_worker_logs
+      logger.info("Reopening logs for #{name} workers...")
+      @workers.each do |worker|
+        next unless worker.running?
+        worker.reopen_logs
+      end
+    end
   end
 end

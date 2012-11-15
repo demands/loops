@@ -12,6 +12,7 @@ module Loops
       @logger = logger
       @worker_pools = {}
       @shutdown = false
+      @reopen_logs = false
     end
 
     def update_wait_period(period)
@@ -35,10 +36,12 @@ module Loops
         logger.debug("Checking workers' health...")
         @worker_pools.each do |name, pool|
           break if shutdown?
+          reopen_worker_logs if reopen_logs?
           pool.check_workers
         end
 
         break if shutdown?
+        reopen_worker_logs if reopen_logs?
         logger.debug("Sleeping for #{@config['poll_period']} seconds...")
         sleep(@config['poll_period'])
       end
@@ -92,8 +95,20 @@ module Loops
       end
     end
 
+    def reopen_worker_logs
+      logger.warn("Reopening worker logs!")
+      @worker_pools.each do |_, pool|
+        pool.reopen_worker_logs
+      end
+      @reopen_logs = false
+    end
+
     def shutdown?
       @shutdown
+    end
+
+    def reopen_logs?
+      @reopen_logs
     end
 
     def start_shutdown!
@@ -101,8 +116,9 @@ module Loops
       @shutdown = true
     end
 
-    def reopen_logs!
-      logger.reopen_logs!
+    def start_reopen_logs!
+      # logger.reopen_logs!
+      @reopen_logs = true
     end
   end
 end

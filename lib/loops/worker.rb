@@ -96,5 +96,21 @@ module Loops
         raise ArgumentError, "Invalid engine name: #{@engine}"
       end
     end
+
+    def reopen_logs
+      if @engine == 'fork'
+        begin
+          logger.debug("Sending USR1 to ##{@pid}")
+          Process.kill('USR1', @pid)
+        rescue Errno::ESRCH, Errno::ECHILD, Errno::EPERM=> e
+          logger.error("Exception from kill: #{e} at #{e.backtrace.first}")
+        end
+      elsif @engine == 'thread'
+        # logs should already be reopened at this point,
+        # if we recieved a USR1 signal
+      else
+        raise ArgumentError, "Invalid engine name: #{@engine}"
+      end
+    end
   end
 end
