@@ -211,7 +211,7 @@ class Loops::Logger < ::Delegator
 
     def log_device_resource
       if String === @log_device_descriptor
-        File.new(@log_device_descriptor, 'w')
+        File.new(@log_device_descriptor, 'a')
       elsif IO === @log_device_descriptor
         @log_device_descriptor
       end
