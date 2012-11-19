@@ -198,12 +198,12 @@ class Loops::Engine
     def setup_signals
       stop = proc {
         warn "Received a signal... stopping..."
-        Loops.logger.reopen_logs!
         @pm.start_shutdown!
       }
 
       reopen_logs = proc {
         warn "Reopening logs..."
+        Loops.logger.reopen_logs!
         @pm.start_reopen_logs!
       }
 
